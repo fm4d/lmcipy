@@ -31,6 +31,7 @@ def opc_sta(machine, value):
 
 def opc_lda(machine, value):
     machine.accumulator = machine.memory[value]
+    machine.minus_flag = False
 
 
 def opc_bra(machine, value):
