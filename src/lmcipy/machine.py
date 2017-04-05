@@ -4,7 +4,9 @@ class HaltSignal(Exception):
     pass
 
 class InvalidMachineOperationError(Exception):
-    pass
+    """
+    Invalid operation within machine.
+    """
 
 
 def opc_add(machine, value):
@@ -61,7 +63,15 @@ def opc_halt(machine):
 
 
 class RestrictedAttribute:
+    """
+    Descriptor that restrict values to be set to values that pass `validate_func`.
 
+    Args:
+        validate_func (func): Function that validates value to be set.
+
+    Raises:
+        InvalidMachineOperationError: When trying to set value that does not pass `validate_func`.
+    """
     def __init__(self, validate_func):
         self._validate_func = validate_func
 
@@ -79,7 +89,13 @@ class RestrictedAttribute:
 
 
 class MachineMemory:
+    """
+    LMC memory 'array' - list that limits access to cells 0 - 99 and limits
+    values stored to 0 - 999. Also limits operations to ``__setitem__``.
 
+    Raises:
+        InvalidMachineOperationError: When accessing invalid memory cells or storing invalid values.
+    """
     def __init__(self):
         self._data = [0] * 99
 
@@ -87,9 +103,13 @@ class MachineMemory:
         return self._data[index]
 
     def __setitem__(self, index, value):
-        check = lambda v: v >= 0 and v <= 999
+        check_value = lambda v: v >= 0 and v <= 999
+        check_index = lambda i: isinstance(i, slice) or (i >= 0 and i <= 99)
 
-        if not all(check(v) for v in (value if isinstance(value, list) else list([value]))):
+        if not check_index(index):
+            raise InvalidMachineOperationError("Cannot access memory cell number {}".format(index))
+
+        if not all(check_value(v) for v in (value if isinstance(value, list) else list([value]))):
             raise InvalidMachineOperationError("Value {} not in range 0 - 999.".format(value))
 
         self._data[index] = value
@@ -99,7 +119,17 @@ class MachineMemory:
 
 
 class MachineState():
+    """
+    Represents whole imaginal state of LMC => from `counter` and `accumulator` to definition
+    of mnemonics and opcodes.
 
+    Note:
+        Instead of various checks in the functions that modify `MachineState`, the checks are done
+        here which makes rest of code simpler.
+
+    Raises:
+        InvalidMachineOperationError: When accessing invalid attributes.
+    """
     counter = RestrictedAttribute(lambda x: x >= 0 and x <= 99)
     accumulator = RestrictedAttribute(lambda x: x >= 0 and x <= 999)
     minus_flag = RestrictedAttribute(lambda x: x in (True, False))
