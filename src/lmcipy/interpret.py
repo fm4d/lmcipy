@@ -72,6 +72,9 @@ def generate_opcodes(machine, program):
 
 
 def opcode_func_deconstruct(machine, opcode):
+    if len(opcode) < 3:
+        return machine.opcodes_to_funcs['0']
+
     if opcode[0] in ('9', '0'):
         return machine.opcodes_to_funcs[opcode]
 
